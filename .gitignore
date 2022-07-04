@@ -1,0 +1,12 @@
+*.boot
+*.so
+*.wpo
+*.cwp
+
+*.ss~
+*.ss#*
+.#*.ss
+
+*.scm~
+*.scm#*
+.#*.scm
