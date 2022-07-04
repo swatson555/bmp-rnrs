@@ -1,18 +1,13 @@
 (library (bmp)
-  (export
-   ;; Constructors and Accessors
-   make-bmp
-   bmp?
-   bmp-height
-   bmp-width
-   bmp-bytevector
-   ;; Utilities
-   make-bmp-from-path
-   make-bmp-from-port
-   save-bmp-to-path
-   save-bmp-to-port)
-
-  (import (rnrs))
+  (export read
+          write
+          ;; Constructors and Selectors
+          make-bmp
+          bmp?
+          bmp-height
+          bmp-width
+          bmp-bytevector)
+  (import (except (rnrs) read write))
 
   (define-record-type bmp
     (fields width height bytevector))
@@ -46,15 +41,7 @@
 	    profile-size
 	    reserved))
 
-
-
-  (define (make-bmp-from-path path)
-    (define port (open-file-input-port path))
-    (define bmpr (make-bmp-from-port port))
-    (close-port port)
-    bmpr)
-
-  (define (make-bmp-from-port port)
+  (define (read port)
     ;;; Construct a bmp from a file port.
     ;;;
     ;; File port reader utilities.
@@ -74,7 +61,6 @@
     (define (read-u8)
       (get-bytevector-n! port datum 0 1)
       (bytevector-uint-ref datum 0 (endianness little) 1))
-
  
     (define (read-header port)
       ;;; Read the BMP header from the file port.
@@ -86,47 +72,103 @@
 		     (bytevector-uint-ref head 10 (endianness little) 4))
 	  (error 'BMP "Unsupported BMP file.")))
 
-
     (define (read-description port)
       ;;; Read the DIB metadata from the file port.
       ;;;
       ;; Determine the descriptor version.
       (define version  (read-u32))
-      (define core? (= version 12))
-      (define os2x? (or (= version 16) (= version 64)))
-      (define info? (= version 40))
-      (define ver2? (= version 52))
-      (define ver3? (= version 56))
-      (define ver4? (= version 108))
-      (define ver5? (= version 124))
+      ;; (define core? (= version 12))
+      ;; (define os2x? (or (= version 16) (= version 64)))
+      ;; (define info? (= version 40))
+      ;; (define ver2? (= version 52))
+      ;; (define ver3? (= version 56))
+      ;; (define ver4? (= version 108))
+      ;; (define ver5? (= version 124))
 
       ;; Read descriptor into record.
       (define (read-version-5)
-	(make-description version (read-s32) (read-s32) (read-u16) (read-u16) (read-u32) (read-u32) (read-s32)
-			  (read-s32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32)
-			  (list (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32))
-			  (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32)))
+	(make-description version
+                          (read-s32)
+                          (read-s32)
+                          (read-u16)
+                          (read-u16)
+                          (read-u32)
+                          (read-u32)
+                          (read-s32)
+			  (read-s32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+			  (list (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32))
+			  (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)))
       (define (read-version-4)
-	(make-description version (read-s32) (read-s32) (read-u16) (read-u16) (read-u32) (read-u32) (read-s32)
-			  (read-s32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32)
-			  (list (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32) (read-u32))
-			  (read-u32) (read-u32) (read-u32) #f #f #f #f))
-      (cond (ver5? (read-version-5))
-	    (ver4? (read-version-4))
-	    (ver3? (error 'BMP "BITMAPV3INFOHEADER unsupported."))
-	    (ver2? (error 'BMP "BITMAPV2INFOHEADER unsupported."))
-	    (info? (error 'BMP "BITMAPINFOHEADER unsupported."))
-	    (os2x? (error 'BMP "OS22XBITMAPHEADER unsupported."))
-	    (core? (error 'BMP "BITMAPCOREHEADER unsupported."))
+	(make-description version
+                          (read-s32)
+                          (read-s32)
+                          (read-u16)
+                          (read-u16)
+                          (read-u32)
+                          (read-u32)
+                          (read-s32)
+			  (read-s32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          (read-u32)
+			  (list (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32)
+                                (read-u32))
+			  (read-u32)
+                          (read-u32)
+                          (read-u32)
+                          #f
+                          #f
+                          #f
+                          #f))
+      (cond ((= version 124) (read-version-5))
+	    ((= version 108) (read-version-4))
+	    ((= version 56) (error 'BMP "BITMAPV3INFOHEADER unsupported."))
+	    ((= version 52) (error 'BMP "BITMAPV2INFOHEADER unsupported."))
+	    ((= version 40) (error 'BMP "BITMAPINFOHEADER unsupported."))
+	    ((or (= version 16)
+                 (= version 64))
+             (error 'BMP "OS22XBITMAPHEADER unsupported."))
+	    ((= version 12)
+             (error 'BMP "BITMAPCOREHEADER unsupported."))
 	    (else
 	     (error 'BMP "Unsupported BMP verison." version))))
-
 
     (define (read-palette port)
       ;;; Read the color table from the file port.
       ;;;
       (error 'BMP "Color tables unimplemented."))
-
 
     ;; Read metadata into records.
     (define header (read-header port))
@@ -137,7 +179,6 @@
       (if (> (description-clr-used description) 0)
 	  (read-palette port)
 	  #f))
-
 
     (define bytevector
       (make-bytevector (* (description-width description) (description-height description) 4)))
@@ -153,9 +194,9 @@
 			     (let ((pixel-word (read-u16))
 				   (a 255))
 			       ;; BGR 565 - other formats exist...
-			       (bytevector-u8-set! bytevector (+ i 0) (truncate (* (/ (bitwise-bit-field pixel-word 0 5) 32) 255)))
-			       (bytevector-u8-set! bytevector (+ i 1) (truncate (* (/ (bitwise-bit-field pixel-word 5 11) 64) 255)))
-			       (bytevector-u8-set! bytevector (+ i 2) (truncate (* (/ (bitwise-bit-field pixel-word 11 16) 32) 255)))
+			       (bytevector-u8-set! bytevector (+ i 0) (* (/ (bitwise-bit-field pixel-word 0 5) 32) 255))
+			       (bytevector-u8-set! bytevector (+ i 1) (* (/ (bitwise-bit-field pixel-word 5 11) 64) 255))
+			       (bytevector-u8-set! bytevector (+ i 2) (* (/ (bitwise-bit-field pixel-word 11 16) 32) 255))
 			       (bytevector-u8-set! bytevector (+ i 3) a)
 			       (read-pixels (+ 4 i))))))
 		      ((= 24 (description-bit-count description))
@@ -185,18 +226,15 @@
 		      (else
 		       (error 'BMP "Unsupported pixel bit count." (description-bit-count description))))))
 
-
     (define (run-length-encoding-8)
       ;;; Reads RLE8 encoded data into a bmp record.
       ;;;
       (error 'BMP "RLE8 compression unsupported."))
 
-
     (define (run-length-encoding-4)
       ;;; Reads RLE4 encoded data into a bmp record.
       ;;;
       (error 'BMP "RLE4 compression unsupported."))
-
 
     (define (bitfield)
       ;;; Reads bitfield encoded data into a bmp record.
@@ -234,52 +272,41 @@
 		      (else
 		       (error 'BMP "Unsupported pixel bit count." (description-bit-count description))))))
 
-
     (define (jpeg)
       ;;; Reads JPEG encoded data into a bmp record.
       ;;;
       (error 'BMP "JPEG compression unsupported."))
-
 
     (define (png)
       ;;; Reads PNG encoded data into a bmp record.
       ;;;
       (error 'BMP "PNG compression unsupported."))
 
-
     (define (alpha-bitfield)
       ;;; Reads alpha bitfields encoded data into a bmp record.
       ;;;
       (error 'BMP "Alpha bitfield masked data unsupported."))
 
-
     ;; Determine pixel data encoding.
-    (define (bmpe?) (= (description-compression description) 0))
-    (define (rle8?) (= (description-compression description) 1))
-    (define (rle4?) (= (description-compression description) 2))
-    (define (bitf?) (= (description-compression description) 3))
-    (define (jpeg?) (= (description-compression description) 4))
-    (define (pnge?) (= (description-compression description) 5))
-    (define (abit?) (= (description-compression description) 6))
+    ;; (define (bmpe?) (= (description-compression description) 0))
+    ;; (define (rle8?) (= (description-compression description) 1))
+    ;; (define (rle4?) (= (description-compression description) 2))
+    ;; (define (bitf?) (= (description-compression description) 3))
+    ;; (define (jpeg?) (= (description-compression description) 4))
+    ;; (define (pnge?) (= (description-compression description) 5))
+    ;; (define (abit?) (= (description-compression description) 6))
 
-    (cond ((bmpe?) (plain))
-	  ((rle8?) (run-length-encoding-8))
-	  ((rle4?) (run-length-encoding-4))
-	  ((bitf?) (bitfield))
-	  ((jpeg?) (jpeg))
-	  ((pnge?) (png))
-	  ((abit?) (alpha-bitfield))
+    (cond ((= (description-compression description) 0) (plain))
+	  ((= (description-compression description) 1) (run-length-encoding-8))
+	  ((= (description-compression description) 2) (run-length-encoding-4))
+	  ((= (description-compression description) 3) (bitfield))
+	  ((= (description-compression description) 4) (jpeg))
+	  ((= (description-compression description) 5) (png))
+	  ((= (description-compression description) 6) (alpha-bitfield))
 	  (else
 	   (error 'BMP "Unsupported compression encoding." (description-compression description)))))
 
-
-
-  (define (save-bmp-to-path bmp path)
-    (define port (open-file-output-port path (file-options no-fail)))
-    (save-bmp-to-port bmp port)
-    (close-port port))
-
-  (define (save-bmp-to-port bmp port)
+  (define (write bmp port)
     ;;; Store a bmp to a file port.
     ;;;
     ;; File port writer utilities.
